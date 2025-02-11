@@ -114,15 +114,38 @@ battery = 100.0  # Batterie en pourcentage
 battery_drain_rate = 5.0  # Pourcentage par seconde
 clock = pygame.time.Clock()
 
+# Clignotement
+battery_blink_time = 0
+battery_blink_interval = 500  # en millisecondes
+
 def draw_battery():
     """Affiche la barre de batterie en bas et au centre de l'écran."""
+    global battery_blink_time
     bar_width = 300
     bar_height = 20
     bar_x = (largeur - bar_width) // 2
     bar_y = hauteur - 40  # Position en bas de l'écran
     fill_width = int((battery / 100) * bar_width)
-    pygame.draw.rect(WIN, noir, (bar_x, bar_y, bar_width, bar_height))
-    pygame.draw.rect(WIN, vert if battery > 30 else rouge, (bar_x, bar_y, fill_width, bar_height))
+
+    # Si la batterie est à 15% ou moins, on la fait clignoter
+    if battery <= 15:
+        current_time = pygame.time.get_ticks()
+        # Alterner l'affichage de la batterie (clignotement)
+        if current_time - battery_blink_time > battery_blink_interval:
+            battery_blink_time = current_time
+            # On alterne entre afficher et cacher la barre de batterie
+            if fill_width > 0:
+                pygame.draw.rect(WIN, noir, (bar_x, bar_y, bar_width, bar_height))  # Cacher la batterie
+            else:
+                pygame.draw.rect(WIN, noir, (bar_x, bar_y, bar_width, bar_height))  # Cacher la batterie
+                pygame.draw.rect(WIN, rouge, (bar_x, bar_y, fill_width, bar_height))  # Réafficher la batterie
+        else:
+            pygame.draw.rect(WIN, noir, (bar_x, bar_y, bar_width, bar_height))  # Cacher la batterie
+            pygame.draw.rect(WIN, rouge, (bar_x, bar_y, fill_width, bar_height))  # Réafficher la batterie
+    else:
+        # Affichage normal de la batterie
+        pygame.draw.rect(WIN, noir, (bar_x, bar_y, bar_width, bar_height))
+        pygame.draw.rect(WIN, vert if battery > 30 else rouge, (bar_x, bar_y, fill_width, bar_height))
     
 def cone_lumiere():
     """Affiche un cône de lumière avec un dégradé basé uniquement sur la distance."""
@@ -224,8 +247,9 @@ while running:
     if cone_active:
         cone_lumiere()
 
+    # Afficher la batterie
     draw_battery()
-    
+
     # Mettre à jour l'affichage de la fenêtre
     pygame.display.update()
 
