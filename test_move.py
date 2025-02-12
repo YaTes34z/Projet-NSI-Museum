@@ -25,13 +25,17 @@ largeur_map = largeur * 2
 hauteur_map = hauteur * 2
 
 # Charger l'image de fond
-fond = pygame.image.load('images/test_map.jpg')  # Remplace 'ton_image_de_fond.png' par le chemin de ton image
+fond = pygame.image.load('test_map.jpg')  # Remplace 'ton_image_de_fond.png' par le chemin de ton image
 
 # Redimensionner l'image si nécessaire
 fond = pygame.transform.scale(fond, (largeur_map, hauteur_map))
 
 # Paramètres du carré
 square_size = 64
+
+personnage = pygame.image.load('homme_droit.png')  # Remplace par le chemin de ton image
+personnage = pygame.transform.scale(personnage, (square_size, square_size))  # Redimensionner l'image pour correspondre à la taille du carré
+
 x = largeur_map // 2 - square_size // 2  # Position initiale du carré (au centre de la carte)
 y = hauteur_map // 2 - square_size // 2
 velocity = 10  # Vitesse de déplacement
@@ -114,38 +118,15 @@ battery = 100.0  # Batterie en pourcentage
 battery_drain_rate = 5.0  # Pourcentage par seconde
 clock = pygame.time.Clock()
 
-# Clignotement
-battery_blink_time = 0
-battery_blink_interval = 500  # en millisecondes
-
 def draw_battery():
     """Affiche la barre de batterie en bas et au centre de l'écran."""
-    global battery_blink_time
     bar_width = 300
     bar_height = 20
     bar_x = (largeur - bar_width) // 2
     bar_y = hauteur - 40  # Position en bas de l'écran
     fill_width = int((battery / 100) * bar_width)
-
-    # Si la batterie est à 15% ou moins, on la fait clignoter
-    if battery <= 15:
-        current_time = pygame.time.get_ticks()
-        # Alterner l'affichage de la batterie (clignotement)
-        if current_time - battery_blink_time > battery_blink_interval:
-            battery_blink_time = current_time
-            # On alterne entre afficher et cacher la barre de batterie
-            if fill_width > 0:
-                pygame.draw.rect(WIN, noir, (bar_x, bar_y, bar_width, bar_height))  # Cacher la batterie
-            else:
-                pygame.draw.rect(WIN, noir, (bar_x, bar_y, bar_width, bar_height))  # Cacher la batterie
-                pygame.draw.rect(WIN, rouge, (bar_x, bar_y, fill_width, bar_height))  # Réafficher la batterie
-        else:
-            pygame.draw.rect(WIN, noir, (bar_x, bar_y, bar_width, bar_height))  # Cacher la batterie
-            pygame.draw.rect(WIN, rouge, (bar_x, bar_y, fill_width, bar_height))  # Réafficher la batterie
-    else:
-        # Affichage normal de la batterie
-        pygame.draw.rect(WIN, noir, (bar_x, bar_y, bar_width, bar_height))
-        pygame.draw.rect(WIN, vert if battery > 30 else rouge, (bar_x, bar_y, fill_width, bar_height))
+    pygame.draw.rect(WIN, noir, (bar_x, bar_y, bar_width, bar_height))
+    pygame.draw.rect(WIN, vert if battery > 30 else rouge, (bar_x, bar_y, fill_width, bar_height))
     
 def cone_lumiere():
     """Affiche un cône de lumière avec un dégradé basé uniquement sur la distance."""
@@ -161,7 +142,7 @@ def cone_lumiere():
 
     # Créer un masque semi-transparent
     mask = pygame.Surface((largeur, hauteur), pygame.SRCALPHA)
-    mask.fill((0, 0, 0, 255))  # Ombre globale sur toute la scène
+    mask.fill((0, 0, 0, 230))  # Ombre globale sur toute la scène
 
     # Générer le cône de lumière avec un dégradé en fonction de la distance
     for i in range(cone_length, 0, -5):  # De l'intérieur vers l'extérieur
@@ -183,6 +164,10 @@ def cone_lumiere():
         # Vérifier si le polygone est valide avant de le dessiner
         if len(points) > 2:
             pygame.draw.polygon(mask, color, points)
+
+    # Assurer que le personnage soit toujours éclairé (cercle lumineux autour du personnage)
+    player_light_radius = 35  # Rayon de la lumière autour du personnage
+    pygame.draw.circle(mask, (0, 0, 0, 255 - alpha), (player_screen_x, player_screen_y), player_light_radius)
 
     # Appliquer le masque à l'écran
     WIN.blit(mask, (0, 0))
@@ -215,13 +200,13 @@ while running:
 
     # Gestion des déplacements du carré
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT]:  # Déplacement vers la gauche
+    if keys[pygame.K_q]:  # Déplacement vers la gauche
         x -= velocity
-    if keys[pygame.K_RIGHT]:  # Déplacement vers la droite
+    if keys[pygame.K_d]:  # Déplacement vers la droite
         x += velocity
-    if keys[pygame.K_UP]:  # Déplacement vers le haut
+    if keys[pygame.K_z]:  # Déplacement vers le haut
         y -= velocity
-    if keys[pygame.K_DOWN]:  # Déplacement vers le bas
+    if keys[pygame.K_s]:  # Déplacement vers le bas
         y += velocity
 
     # Empêcher le carré de sortir de la carte
@@ -242,17 +227,16 @@ while running:
     WIN.blit(fond, (-camera_x, -camera_y))
 
     # Dessiner le carré sur la fenêtre avec son décalage dû à la caméra
-    pygame.draw.rect(WIN, rouge, (x - camera_x, y - camera_y, square_size, square_size))
+    WIN.blit(personnage, (x - camera_x, y - camera_y))
 
     if cone_active:
         cone_lumiere()
 
     else:
-        WIN.fill((0, 0, 0))
+        WIN.fill((0,0,0))
 
-    # Afficher la batterie
     draw_battery()
-
+    
     # Mettre à jour l'affichage de la fenêtre
     pygame.display.update()
 
