@@ -25,7 +25,7 @@ largeur_map = largeur * 2
 hauteur_map = hauteur * 2
 
 # Charger l'image de fond
-fond = pygame.image.load('test_map.jpg')  # Remplace 'ton_image_de_fond.png' par le chemin de ton image
+fond = pygame.image.load('images/test_map.jpg')  # Remplace 'ton_image_de_fond.png' par le chemin de ton image
 
 # Redimensionner l'image si nécessaire
 fond = pygame.transform.scale(fond, (largeur_map, hauteur_map))
@@ -246,6 +246,9 @@ while running:
 
     if cone_active:
         cone_lumiere()
+
+    else:
+        WIN.fill((0, 0, 0))
 
     # Afficher la batterie
     draw_battery()
