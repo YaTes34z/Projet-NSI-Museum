@@ -31,7 +31,7 @@ logo = pygame.transform.scale(logo, (int(LARGEUR_ECRAN * 0.175), int(LARGEUR_ECR
 
 # Boutons
 class Bouton:
-    def __init__(self, texte, position, action, largeur=300, hauteur=75):
+    def __init__(self, texte, position, action, largeur=200, hauteur=50):
         self.texte = texte
         self.position = position
         self.action = action
