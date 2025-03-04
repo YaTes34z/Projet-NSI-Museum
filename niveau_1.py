@@ -2,7 +2,7 @@ import pygame
 import math
 import random
 
-from setting import square_size, blanc, noir, vert, rouge, cone_angle, cone_active, cone_length, moisissures, ennemis, ennemis_tues, player_health, velocity, camera_x, camera_y, moisissure_image
+from setting import *
 
 # Initialisation de Pygame
 pygame.init()

@@ -1,7 +1,5 @@
 import sys
 import pygame
-# import niveau_1
-# import niveau_2
 import cv2
 
 pygame.init()
@@ -31,7 +29,7 @@ logo = pygame.transform.scale(logo, (int(LARGEUR_ECRAN * 0.175), int(LARGEUR_ECR
 
 # Boutons
 class Bouton:
-    def __init__(self, texte, position, action, largeur=200, hauteur=50):
+    def __init__(self, texte, position, action, largeur=180, hauteur=50):
         self.texte = texte
         self.position = position
         self.action = action
@@ -79,37 +77,14 @@ def lancer_niveau_2():
     jouer_cinematique(2)
     # niveau_2.main(FENETRE, LARGEUR_ECRAN, HAUTEUR_ECRAN)
 
-def afficher_menu():
-    menu_actif = True
-    boutons_menu = [
-        Bouton("Reprendre", (LARGEUR_ECRAN // 2 - 100, HAUTEUR_ECRAN // 2 - 25), lambda: None),
-        Bouton("Quitter", (LARGEUR_ECRAN // 2 - 100, HAUTEUR_ECRAN // 2 + 45), lambda: pygame.quit() or sys.exit())
-    ]
-    
-    while menu_actif:
-        FENETRE.fill((50, 50, 50))
-        for bouton in boutons_menu:
-            bouton.dessiner(FENETRE)
-        pygame.display.flip()
-        
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                menu_actif = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                for bouton in boutons_menu:
-                    if bouton.clic(event.pos):
-                        bouton.action()
-                        if bouton.texte == "Reprendre":
-                            menu_actif = False
-
-def main():
+def afficher_menu_principal():
+    """Affiche le menu principal."""
     clock = pygame.time.Clock()
     boutons = [
-        Bouton("Niveau 1", (LARGEUR_ECRAN // 2 - 150, HAUTEUR_ECRAN // 2 - 75), lancer_niveau_1),
-        Bouton("Niveau 2", (LARGEUR_ECRAN // 2 - 150, HAUTEUR_ECRAN // 2 + 25), lancer_niveau_2)
+        Bouton("Niveau 1", (LARGEUR_ECRAN // 2 - 90, HAUTEUR_ECRAN // 2 - 70), lancer_niveau_1),
+        Bouton("Niveau 2", (LARGEUR_ECRAN // 2 - 90, HAUTEUR_ECRAN // 2 + 20), lancer_niveau_2),
+        Bouton("Contrôles", (LARGEUR_ECRAN // 2 - 90, HAUTEUR_ECRAN // 2 + 110), afficher_controles),
+        Bouton("Quitter", (LARGEUR_ECRAN // 2 - 90, HAUTEUR_ECRAN // 2 + 210), lambda: pygame.quit() or sys.exit())
     ]
     
     while True:
@@ -123,14 +98,63 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                afficher_menu()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for bouton in boutons:
                     if bouton.clic(event.pos):
                         bouton.action()
         
         clock.tick(30)
+
+def afficher_controles():
+    """Affiche une fenêtre avec les contrôles du jeu."""
+    controles_actif = True
+    font = pygame.font.Font(None, 36)
+    controles = [
+        "Z : Aller haut",
+        "S : Aller en bas",
+        "D : Aller à droite",
+        "Q : Aller à gauche",
+        "Clic gauche : Enlever la moisissure",
+        "Clic droit : Activer la lampe-torche",
+        "Echap : Accéder au menu",
+        "E : Accéder à la carte"
+    ]
+    
+    bouton_retour = Bouton("Retour", (LARGEUR_ECRAN // 2 - 90, HAUTEUR_ECRAN - 100), afficher_menu_principal)
+    
+    while controles_actif:
+        FENETRE.fill((50, 50, 50))
+        y_offset_left = 420
+        y_offset_right = 420
+        x_offset_left = LARGEUR_ECRAN // 2 - 200
+        x_offset_right = LARGEUR_ECRAN // 2 + 200
+        
+        for i, ligne in enumerate(controles):
+            texte_surface = font.render(ligne, True, (255, 255, 255))
+            if i < 4:
+                texte_rect = texte_surface.get_rect(center=(x_offset_left, y_offset_left))
+                y_offset_left += 50  # 40 pixels pour la hauteur du texte + 10 pixels pour le gap
+            else:
+                texte_rect = texte_surface.get_rect(center=(x_offset_right, y_offset_right))
+                y_offset_right += 50  # 40 pixels pour la hauteur du texte + 10 pixels pour le gap
+            FENETRE.blit(texte_surface, texte_rect)
+        
+        bouton_retour.dessiner(FENETRE)
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                controles_actif = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if bouton_retour.clic(event.pos):
+                    controles_actif = False
+                    afficher_menu_principal()
+
+def main():
+    afficher_menu_principal()
 
 if __name__ == "__main__":
     main()
