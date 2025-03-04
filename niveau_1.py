@@ -2,17 +2,25 @@ import pygame
 import math
 import random
 
+from setting import square_size, blanc, noir, vert, rouge, cone_angle, cone_active, cone_length, moisissures, ennemis, ennemis_tues, player_health, velocity, camera_x, camera_y, moisissure_image
+
 # Initialisation de Pygame
 pygame.init()
 running = True
 paused = False
-# Paramètres du carré (personnage)
-square_size = 64
+
+info = pygame.display.Info()
 
 # Paramètres de la fenêtre
-info = pygame.display.Info()
 largeur = info.current_w # Largeur de la fenêtre adaptée à l'écran de l'utilisateur
 hauteur = info.current_h # Hauteur de la fenêtre adaptée à l'écran de l'utilisateur
+
+# Taille de la carte (map)
+largeur_map = largeur * 2
+hauteur_map = hauteur * 2
+
+x = largeur_map // 2 - square_size // 2  # Position initiale du carré (au centre de la carte)
+y = hauteur_map // 2 - square_size // 2
 
 # Charge les images du personnages pour son animation
 marche_droit = [pygame.image.load(f'images/homme_droit_{i}.png') for i in range(1, 3)]
@@ -29,16 +37,6 @@ marche_bas = [pygame.transform.scale(img, (square_size, square_size)) for img in
 # Fenêtre en plein écran
 WIN = pygame.display.set_mode((largeur, hauteur), pygame.FULLSCREEN)
 
-# Couleurs
-blanc = (255, 255, 255)
-rouge = (255, 0, 0)
-vert = (0, 255, 0)
-noir = (0, 0, 0)
-
-# Taille de la carte (map)
-largeur_map = largeur * 2
-hauteur_map = hauteur * 2
-
 # Charger l'image de fond
 fond = pygame.image.load('images/test_map.jpg')
 
@@ -50,35 +48,6 @@ current_frame = 0
 frame_delay = 5  # Nombre de frames avant de changer d'image
 frame_count = 0
 current_direction = "bas"
-
-# Image du personnage au lancement du jeu
-personnage = pygame.image.load('images/homme_droit_1.png')
-personnage = pygame.transform.scale(personnage, (square_size, square_size))
-
-x = largeur_map // 2 - square_size // 2  # Position initiale du carré (au centre de la carte)
-y = hauteur_map // 2 - square_size // 2
-velocity = 10  # Vitesse de déplacement
-
-# Position de la caméra
-camera_x, camera_y = 0, 0
-
-# Angle et longueur du cône de lumière
-cone_angle = 70  # Angle du cône
-cone_length = 400  # Portée de la lumière
-cone_active = True  # Le cône est allumé au début
-
-# Ajouter une texture de moisissure
-moisissure_image = pygame.image.load('images/boue.png')
-moisissure_image = pygame.transform.scale(moisissure_image, (64, 64))
-
-# Liste pour stocker les positions de la moisissure
-moisissures = []
-ennemis = []
-ennemis_tues = 0
-
-# Initialisation de la santé du joueur
-player_health = 100
-
 
 # Fonction pour avoir la bonne image de l'animation
 def get_current_image():
