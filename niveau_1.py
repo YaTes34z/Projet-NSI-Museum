@@ -331,7 +331,7 @@ def nettoyer_moisissure():
                 if pygame.mouse.get_pressed()[0]:  # Si le bouton gauche de la souris est enfoncé
                     if moisissure not in nettoyage_temps_debut:
                         nettoyage_temps_debut[moisissure] = temps_actuel
-                    elif temps_actuel - nettoyage_temps_debut[moisissure] >= 2000:  # 2000 ms = 2 secondes
+                    elif temps_actuel - nettoyage_temps_debut[moisissure] >= 1500:  # 1500 ms = 1,5 secondes
                         moisissures.remove(moisissure)
                         del nettoyage_temps_debut[moisissure]
                 else:

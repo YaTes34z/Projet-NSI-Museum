@@ -33,4 +33,4 @@ camera_x, camera_y = 0, 0
 
 # Ajouter une texture de moisissure
 moisissure_image = pygame.image.load('images/boue.png')
-moisissure_image = pygame.transform.scale(moisissure_image, (64, 64))
+moisissure_image = pygame.transform.scale(moisissure_image, (100, 100))
