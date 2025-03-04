@@ -2,6 +2,7 @@ import sys
 import pygame
 import cv2
 import niveau_1
+import pygame.mixer
 
 pygame.init()
 
@@ -55,11 +56,20 @@ def jouer_cinematique(niveau):
         print(f"Erreur : Impossible de lire la cinématique {niveau}")
         return
     
+    # Charger et jouer l'audio
+    pygame.mixer.init()
+    pygame.mixer.music.load(f'images/cinematique_{niveau}.mp3')
+    pygame.mixer.music.play()
+    
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    clock = pygame.time.Clock()
+    
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = cv2.resize(frame, (LARGEUR_ECRAN, HAUTEUR_ECRAN))  # Redimensionner la frame
         frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
         FENETRE.blit(frame, (0, 0))
         pygame.display.flip()
@@ -68,15 +78,18 @@ def jouer_cinematique(niveau):
                 cap.release()
                 pygame.quit()
                 sys.exit()
+        clock.tick(fps)
+    
     cap.release()
+    pygame.mixer.music.stop()
 
 def lancer_niveau_1():
     jouer_cinematique(1)
     niveau_1.main()
 
 def lancer_niveau_2():
-    jouer_cinematique(2)
-    # niveau_2.main(FENETRE, LARGEUR_ECRAN, HAUTEUR_ECRAN)
+    print("Le niveau 2 n'est pas encore disponible.")
+    # jouer_cinematique(2)
 
 def afficher_menu_principal():
     """Affiche le menu principal."""
