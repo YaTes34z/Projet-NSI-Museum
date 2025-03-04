@@ -1,6 +1,7 @@
 import pygame
 import math
 import random
+import main as accueil
 
 from setting import *
 
@@ -92,7 +93,7 @@ def pause_menu():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 paused = False
             if event.type == pygame.MOUSEBUTTONDOWN and button_rect.collidepoint(event.pos):
-                pygame.quit()
+                accueil.main()
                 exit()
 
 # Fonction pour afficher la carte de la map
@@ -110,14 +111,20 @@ def pause_map():
         player_map_x = int(x / largeur_map * largeur)
         player_map_y = int(y / hauteur_map * hauteur)
 
-        # Dessiner un point représentant le joueur
-        pygame.draw.circle(WIN, (255, 0, 0), (player_map_x, player_map_y), 10)  # Point rouge
+        # Dessiner un rond de couleur derrière l'image du personnage
+        pygame.draw.circle(WIN, (0, 255, 0), (player_map_x, player_map_y), square_size // 4 + 3)
+        # Dessiner l'image du personnage
+        player_image = pygame.transform.scale(marche_bas[0], (square_size//2, square_size//2))
+        WIN.blit(player_image, (player_map_x - player_image.get_width() // 2, player_map_y - player_image.get_height() // 2))
 
         # Dessiner les ennemis sur la mini-carte
         for ennemi in ennemis:
             ennemi_map_x = int(ennemi.x / largeur_map * largeur)
             ennemi_map_y = int(ennemi.y / hauteur_map * hauteur)
-            pygame.draw.circle(WIN, (0, 0, 255), (ennemi_map_x, ennemi_map_y), 10)  # Point bleu pour les ennemis
+            # Dessiner un rond de couleur derrière l'image de l'ennemi
+            pygame.draw.circle(WIN, (255, 0, 0), (ennemi_map_x, ennemi_map_y), ennemi.size // 4 + 3)
+            ennemi_image = pygame.transform.scale(ennemi.image, (ennemi.size//2, ennemi.size//2))
+            WIN.blit(ennemi_image, (ennemi_map_x - ennemi_image.get_width() // 2, ennemi_map_y - ennemi_image.get_height() // 2))
 
         # Ajouter du texte pour quitter la carte
         text = font.render("Appuyez sur 'E' pour revenir au jeu", True, (255, 255, 255))
@@ -312,6 +319,7 @@ nettoyage_temps_debut = {}
 
 # Fonction pour afficher la moisissure laissée par les ennemis à leur mort
 def nettoyer_moisissure():
+    cone_points = []
     mouse_x, mouse_y = pygame.mouse.get_pos()
     temps_actuel = pygame.time.get_ticks()
     for moisissure in moisissures[:]:
@@ -336,139 +344,142 @@ def nettoyer_moisissure():
 spawn_timer = 0
 spawn_interval = 5  # Intervalle de génération des ennemis en secondes
 
-# Boucle principale du jeu
-while running:
-    pygame.time.delay(30)  # Contrôle la vitesse de la boucle
+def main() :
+    # Boucle principale du jeu
+    global fond, x, y, running, camera_x, camera_y, frame_count, current_frame, current_direction, battery, cone_active, ennemis_tues, spawn_timer, spawn_interval
+    while running:
+        pygame.time.delay(30)  # Contrôle la vitesse de la boucle
 
-    # Gestion des événements
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            pause_menu()
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
-            pause_map()
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
-            if battery > 0:
-                cone_active = not cone_active
-    dt = clock.tick(30) / 1000.0  # Temps écoulé en secondes
+        # Gestion des événements
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                pause_menu()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
+                pause_map()
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+                if battery > 0:
+                    cone_active = not cone_active
+        dt = clock.tick(30) / 1000.0  # Temps écoulé en secondes
 
-    if cone_active:
-        battery -= battery_drain_rate * dt
-        battery = max(battery, 0)
-        if battery == 0:
-            cone_active = False
-    else:
-        battery += battery_drain_rate * dt
-        battery = min(battery, 100)
-
-    # Gestion des déplacements du personnage
-    keys = pygame.key.get_pressed()
-    moving = False
-    if keys[pygame.K_q]:
-        x -= velocity
-        current_direction = "gauche"
-        moving = True
-    if keys[pygame.K_d]: 
-        x += velocity
-        current_direction = "droit"
-        moving = True
-    if keys[pygame.K_z]: 
-        y -= velocity
-        current_direction = "haut"
-        moving = True
-    if keys[pygame.K_s]:  
-        y += velocity
-        current_direction = "bas"
-        moving = True
-        
-    if moving:
-        frame_count += 1
-        if frame_count >= frame_delay:
-            current_frame = (current_frame + 1) % len(marche_droit) 
-            frame_count = 0
-    else:
-        current_frame = 0
-
-    # Empêcher le personnage de sortir de la carte
-    x = max(0, min(largeur_map - square_size, x))
-    y = max(0, min(hauteur_map - square_size, y))
-
-    # Mettre à jour la caméra pour suivre le personnage (le centrer dans la fenêtre)
-    camera_x = x - largeur // 2 + square_size // 2
-    camera_y = y - hauteur // 2 + square_size // 2
-
-    # Empêcher la caméra de sortir de la carte
-    camera_x = max(0, min(largeur_map - largeur, camera_x))
-    camera_y = max(0, min(hauteur_map - hauteur, camera_y))
-
-    # Effacer l'écran (fenêtre) à chaque frame
-    WIN.fill(blanc)
-    # Afficher l'image de fond décalée par rapport à la caméra
-    WIN.blit(fond, (-camera_x, -camera_y))
-
-    # Dessiner la moisissure sur la fenêtre
-    for moisissure in moisissures:
-        WIN.blit(moisissure_image, (moisissure[0] - camera_x, moisissure[1] - camera_y))
-
-    # Dessiner le carré sur la fenêtre avec son décalage dû à la caméra
-    WIN.blit(get_current_image(), (x - camera_x, y - camera_y))
-
-    if cone_active or battery == 0:
-        cone_points = cone_lumiere()
-    else:
-        # Assombrir les ennemis lorsque la batterie est épuisée
-        mask = pygame.Surface((largeur, hauteur), pygame.SRCALPHA)
-        mask.fill((0, 0, 0, 245))
-        player_screen_x = x - camera_x + square_size // 2
-        player_screen_y = y - camera_y + square_size // 2
-        player_light_radius = 35  # Rayon de la lumière autour du personnage
-        pygame.draw.circle(mask, (0, 0, 0, 150), (player_screen_x, player_screen_y), player_light_radius)
-        WIN.blit(mask, (0, 0))
-        cone_points = []
-
-    draw_battery()
-
-    draw_health_bar()  # Afficher la barre de vie
-
-    if player_health == 0:
-        pygame.quit()
-        
-    draw_enemy_counter()
-
-    # Mettre à jour les ennemis et vérifier s'ils sont dans le cône de lumière
-    for ennemi in ennemis[:]:
-        ennemi.ennemiIA(x, y, dt)
-        ennemi_screen_x = ennemi.x - camera_x + ennemi.size // 2
-        ennemi_screen_y = ennemi.y - camera_y + ennemi.size // 2
-        if is_point_in_cone(ennemi_screen_x, ennemi_screen_y, cone_points):
-            ennemi.time_in_light += dt
-            print(f"Ennemi {ennemi} dans le cône de lumière pendant {ennemi.time_in_light} secondes")
-            WIN.blit(ennemi.image, (ennemi.x - camera_x, ennemi.y - camera_y))  # Dessiner l'ennemi seulement s'il est dans le cône de lumière
+        if cone_active:
+            battery -= battery_drain_rate * dt
+            battery = max(battery, 0)
+            if battery == 0:
+                cone_active = False
         else:
-            ennemi.time_in_light = 0
+            battery += battery_drain_rate * dt
+            battery = min(battery, 100)
 
-        if ennemi.time_in_light > 3:
-            print(f"Ennemi {ennemi} tué")
-            ennemi.deposer_moisissure()
-            ennemis.remove(ennemi)
-            ennemis_tues += 1  # Incrémenter le compteur d'ennemis tués
-            if ennemis_tues >= 5:  # Vérifier si le joueur a atteint le nombre requis
-                # Charger la nouvelle carte ici
-                fond = pygame.image.load('images/map2.png')
-                fond = pygame.transform.scale(fond, (largeur_map, hauteur_map))
+        # Gestion des déplacements du personnage
+        keys = pygame.key.get_pressed()
+        moving = False
+        if keys[pygame.K_q]:
+            x -= velocity
+            current_direction = "gauche"
+            moving = True
+        if keys[pygame.K_d]: 
+            x += velocity
+            current_direction = "droit"
+            moving = True
+        if keys[pygame.K_z]: 
+            y -= velocity
+            current_direction = "haut"
+            moving = True
+        if keys[pygame.K_s]:  
+            y += velocity
+            current_direction = "bas"
+            moving = True
 
-    # Nettoyer la moisissure
-    nettoyer_moisissure()
+        if moving:
+            frame_count += 1
+            if frame_count >= frame_delay:
+                current_frame = (current_frame + 1) % len(marche_droit) 
+                frame_count = 0
+        else:
+            current_frame = 0
 
-    # Générer des ennemis à intervalles réguliers
-    spawn_timer += dt
-    if spawn_timer >= spawn_interval:
-        spawn_ennemi()
-        spawn_timer = 0
+        # Empêcher le personnage de sortir de la carte
+        x = max(0, min(largeur_map - square_size, x))
+        y = max(0, min(hauteur_map - square_size, y))
 
-    # Mettre à jour l'affichage de la fenêtre
-    pygame.display.update()
+        # Mettre à jour la caméra pour suivre le personnage (le centrer dans la fenêtre)
+        camera_x = x - largeur // 2 + square_size // 2
+        camera_y = y - hauteur // 2 + square_size // 2
 
-# Quitter Pygame proprement
-pygame.quit()
+        # Empêcher la caméra de sortir de la carte
+        camera_x = max(0, min(largeur_map - largeur, camera_x))
+        camera_y = max(0, min(hauteur_map - hauteur, camera_y))
+
+        # Effacer l'écran (fenêtre) à chaque frame
+        WIN.fill(blanc)
+        # Afficher l'image de fond décalée par rapport à la caméra
+        WIN.blit(fond, (-camera_x, -camera_y))
+
+        # Dessiner la moisissure sur la fenêtre
+        for moisissure in moisissures:
+            WIN.blit(moisissure_image, (moisissure[0] - camera_x, moisissure[1] - camera_y))
+
+        # Dessiner le carré sur la fenêtre avec son décalage dû à la caméra
+        WIN.blit(get_current_image(), (x - camera_x, y - camera_y))
+
+        if cone_active or battery == 0:
+            cone_points = cone_lumiere()
+        else:
+            # Assombrir les ennemis lorsque la batterie est épuisée
+            mask = pygame.Surface((largeur, hauteur), pygame.SRCALPHA)
+            mask.fill((0, 0, 0, 245))
+            player_screen_x = x - camera_x + square_size // 2
+            player_screen_y = y - camera_y + square_size // 2
+            player_light_radius = 35  # Rayon de la lumière autour du personnage
+            pygame.draw.circle(mask, (0, 0, 0, 150), (player_screen_x, player_screen_y), player_light_radius)
+            WIN.blit(mask, (0, 0))
+            cone_points = []
+
+        draw_battery()
+
+        draw_health_bar()  # Afficher la barre de vie
+
+        if player_health == 0:
+            pygame.quit()
+
+        draw_enemy_counter()
+
+        # Mettre à jour les ennemis et vérifier s'ils sont dans le cône de lumière
+        for ennemi in ennemis[:]:
+            ennemi.ennemiIA(x, y, dt)
+            ennemi_screen_x = ennemi.x - camera_x + ennemi.size // 2
+            ennemi_screen_y = ennemi.y - camera_y + ennemi.size // 2
+            if is_point_in_cone(ennemi_screen_x, ennemi_screen_y, cone_points):
+                ennemi.time_in_light += dt
+                WIN.blit(ennemi.image, (ennemi.x - camera_x, ennemi.y - camera_y))  # Dessiner l'ennemi seulement s'il est dans le cône de lumière
+            else:
+                ennemi.time_in_light = 0
+
+            if ennemi.time_in_light > 3:
+                ennemi.deposer_moisissure()
+                ennemis.remove(ennemi)
+                ennemis_tues += 1  # Incrémenter le compteur d'ennemis tués
+                if ennemis_tues >= 5:  # Vérifier si le joueur a atteint le nombre requis
+                    # Charger la nouvelle carte ici
+                    fond = pygame.image.load('images/map2.png')
+                    fond = pygame.transform.scale(fond, (largeur_map, hauteur_map))
+
+        # Nettoyer la moisissure
+        nettoyer_moisissure()
+
+        # Générer des ennemis à intervalles réguliers
+        spawn_timer += dt
+        if spawn_timer >= spawn_interval:
+            spawn_ennemi()
+            spawn_timer = 0
+
+        # Mettre à jour l'affichage de la fenêtre
+        pygame.display.update()
+
+    # Quitter Pygame proprement
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()

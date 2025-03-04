@@ -1,6 +1,7 @@
 import sys
 import pygame
 import cv2
+import niveau_1
 
 pygame.init()
 
@@ -71,7 +72,7 @@ def jouer_cinematique(niveau):
 
 def lancer_niveau_1():
     jouer_cinematique(1)
-    # niveau_1.main()
+    niveau_1.main()
 
 def lancer_niveau_2():
     jouer_cinematique(2)
