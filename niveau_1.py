@@ -144,6 +144,12 @@ def pause_map():
         # Dessiner un point représentant le joueur
         pygame.draw.circle(WIN, (255, 0, 0), (player_map_x, player_map_y), 10)  # Point rouge
 
+        # Dessiner les ennemis sur la mini-carte
+        for ennemi in ennemis:
+            ennemi_map_x = int(ennemi.x / largeur_map * largeur)
+            ennemi_map_y = int(ennemi.y / hauteur_map * hauteur)
+            pygame.draw.circle(WIN, (0, 0, 255), (ennemi_map_x, ennemi_map_y), 10)  # Point bleu pour les ennemis
+
         # Ajouter du texte pour quitter la carte
         text = font.render("Appuyez sur 'E' pour revenir au jeu", True, (255, 255, 255))
         text_rect = text.get_rect(center=(largeur // 2, hauteur - 50))
@@ -469,6 +475,7 @@ while running:
         if is_point_in_cone(ennemi_screen_x, ennemi_screen_y, cone_points):
             ennemi.time_in_light += dt
             print(f"Ennemi {ennemi} dans le cône de lumière pendant {ennemi.time_in_light} secondes")
+            WIN.blit(ennemi.image, (ennemi.x - camera_x, ennemi.y - camera_y))  # Dessiner l'ennemi seulement s'il est dans le cône de lumière
         else:
             ennemi.time_in_light = 0
 
@@ -481,8 +488,6 @@ while running:
                 # Charger la nouvelle carte ici
                 fond = pygame.image.load('images/map2.png')
                 fond = pygame.transform.scale(fond, (largeur_map, hauteur_map))
-        else:
-            WIN.blit(ennemi.image, (ennemi.x - camera_x, ennemi.y - camera_y))
 
     # Nettoyer la moisissure
     nettoyer_moisissure()
