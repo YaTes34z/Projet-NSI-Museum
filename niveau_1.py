@@ -344,9 +344,83 @@ def nettoyer_moisissure():
 spawn_timer = 0
 spawn_interval = 5  # Intervalle de génération des ennemis en secondes
 
-def main() :
-    # Boucle principale du jeu
-    global fond, x, y, running, camera_x, camera_y, frame_count, current_frame, current_direction, battery, cone_active, ennemis_tues, spawn_timer, spawn_interval
+dialogues = [
+    "Qu'est ce qu'il s'est passé ? Où suis-je ?",
+    "Je me suis fait absorbé par le tableau ?",
+    "Il faut que je trouve un moyen de sortir d'ici !"
+]
+current_dialogue_index = 0
+show_dialogue = True
+dialogue_speed = 50  # Vitesse d'affichage des lettres (en millisecondes)
+last_update_time = 0
+current_letter_index = 0
+show_ellipsis = False
+ellipsis_timer = 0
+ellipsis_interval = 500  # Intervalle de clignotement des "..." (en millisecondes)
+dialogues_termines = False
+
+def draw_rounded_rect(surface, rect, color, corner_radius, border_width=0, border_color=(0, 0, 0)):
+    """Draw a rectangle with rounded corners and an optional border."""
+    if border_width:
+        outer_rect = rect.inflate(border_width * 2, border_width * 2)
+        pygame.draw.rect(surface, border_color, outer_rect, border_radius=corner_radius + border_width)
+    pygame.draw.rect(surface, color, rect, border_radius=corner_radius)
+
+def draw_dialogue():
+    """Affiche le dialogue actuel en bas à gauche de l'écran."""
+    global last_update_time, current_letter_index, show_ellipsis, ellipsis_timer
+
+    if show_dialogue and current_dialogue_index < len(dialogues):
+        current_time = pygame.time.get_ticks()
+        font = pygame.font.Font(None, 36)
+        instruction_font = pygame.font.Font(None, 24)
+        
+        dialogue_text = dialogues[current_dialogue_index]
+        instruction_text = "Appuyez sur 'Espace' pour continuer"
+        
+        # Afficher les lettres une par une
+        if current_time - last_update_time > dialogue_speed:
+            current_letter_index += 1
+            last_update_time = current_time
+
+        # Limiter l'index des lettres à la longueur du texte
+        current_letter_index = min(current_letter_index, len(dialogue_text))
+        displayed_text = dialogue_text[:current_letter_index]
+
+        # Gérer les "..." clignotants
+        if current_letter_index == len(dialogue_text) and current_dialogue_index < len(dialogues) - 1:
+            if current_time - ellipsis_timer > ellipsis_interval:
+                show_ellipsis = not show_ellipsis
+                ellipsis_timer = current_time
+            if show_ellipsis:
+                displayed_text += "..."
+
+        dialogue_surface = font.render(displayed_text, True, (0, 0, 0))
+        instruction_surface = instruction_font.render(instruction_text, True, (0, 0, 0))
+        
+        dialogue_rect = dialogue_surface.get_rect(topleft=(20, hauteur - 100))
+        instruction_rect = instruction_surface.get_rect(topleft=(20, dialogue_rect.bottom + 5))
+        
+        # Calculer la taille totale du cadre
+        total_width = max(dialogue_rect.width, instruction_rect.width) + 20
+        total_height = dialogue_rect.height + instruction_rect.height + 30
+        
+        # Positionner le cadre avec un espace par rapport au bord de l'écran
+        frame_rect = pygame.Rect(20, hauteur - total_height - 20, total_width, total_height)
+        
+        # Dessiner le cadre blanc avec un contour noir et des bords arrondis
+        corner_radius = 20
+        border_width = 4
+        draw_rounded_rect(WIN, frame_rect, (255, 255, 255), corner_radius, border_width, (0, 0, 0))
+        
+        # Dessiner le texte dans le cadre
+        WIN.blit(dialogue_surface, (frame_rect.x + 10, frame_rect.y + 10))
+        WIN.blit(instruction_surface, (frame_rect.x + 10, frame_rect.y + dialogue_rect.height + 15))
+
+VISIBILITY_DISTANCE = 100  # Distance à laquelle les ennemis deviennent visibles
+
+def main():
+    global fond, x, y, running, camera_x, camera_y, frame_count, current_frame, current_direction, battery, cone_active, ennemis_tues, spawn_timer, spawn_interval, current_dialogue_index, show_dialogue, dialogue_speed, last_update_time, current_letter_index, show_ellipsis, ellipsis_timer, ellipsis_interval, dialogues_termines
     while running:
         pygame.time.delay(30)  # Contrôle la vitesse de la boucle
 
@@ -358,6 +432,16 @@ def main() :
                 pause_menu()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
                 pause_map()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                if show_dialogue:
+                    current_dialogue_index += 1
+                    current_letter_index = 0
+                    last_update_time = pygame.time.get_ticks()
+                    show_ellipsis = False
+                    ellipsis_timer = 0
+                    if current_dialogue_index >= len(dialogues):
+                        show_dialogue = False
+                        dialogues_termines = True
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
                 if battery > 0:
                     cone_active = not cone_active
@@ -451,9 +535,10 @@ def main() :
             ennemi.ennemiIA(x, y, dt)
             ennemi_screen_x = ennemi.x - camera_x + ennemi.size // 2
             ennemi_screen_y = ennemi.y - camera_y + ennemi.size // 2
-            if is_point_in_cone(ennemi_screen_x, ennemi_screen_y, cone_points):
+            distance_to_player = math.sqrt((ennemi_screen_x - player_screen_x) ** 2 + (ennemi_screen_y - player_screen_y) ** 2)
+            if is_point_in_cone(ennemi_screen_x, ennemi_screen_y, cone_points) or distance_to_player < VISIBILITY_DISTANCE:
                 ennemi.time_in_light += dt
-                WIN.blit(ennemi.image, (ennemi.x - camera_x, ennemi.y - camera_y))  # Dessiner l'ennemi seulement s'il est dans le cône de lumière
+                WIN.blit(ennemi.image, (ennemi.x - camera_x, ennemi.y - camera_y))  # Dessiner l'ennemi s'il est dans le cône de lumière ou proche du joueur
             else:
                 ennemi.time_in_light = 0
 
@@ -470,10 +555,14 @@ def main() :
         nettoyer_moisissure()
 
         # Générer des ennemis à intervalles réguliers
-        spawn_timer += dt
-        if spawn_timer >= spawn_interval:
-            spawn_ennemi()
-            spawn_timer = 0
+        if dialogues_termines:
+            spawn_timer += dt
+            if spawn_timer >= spawn_interval:
+                spawn_ennemi()
+                spawn_timer = 0
+
+        # Afficher le dialogue si nécessaire
+        draw_dialogue()
 
         # Mettre à jour l'affichage de la fenêtre
         pygame.display.update()
