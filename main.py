@@ -151,6 +151,16 @@ touche_E = pygame.transform.scale(pygame.image.load('images/touche_E.png').conve
 touche_CliqueDroit = pygame.transform.scale(pygame.image.load('images/touche_CliqueDroit.png').convert_alpha(), (64, 64))
 touche_CliqueGauche = pygame.transform.scale(pygame.image.load('images/touche_CliqueGauche.png').convert_alpha(), (64, 64))
 
+def draw_text_with_outline(surface, text, font, color, outline_color, pos, outline_width=2):
+    text_surface = font.render(text, True, color)
+    outline_surface = font.render(text, True, outline_color)
+    x, y = pos
+    for dx in range(-outline_width, outline_width + 1):
+        for dy in range(-outline_width, outline_width + 1):
+            if dx != 0 or dy != 0:
+                surface.blit(outline_surface, (x + dx, y + dy))
+    surface.blit(text_surface, pos)
+
 def afficher_controles():
     """Affiche une fenêtre avec les contrôles du jeu."""
     controles_actif = True
@@ -171,6 +181,18 @@ def afficher_controles():
     while controles_actif:
         fond_controles = pygame.image.load("images/fond.jpg").convert()
         fond_controles = pygame.transform.scale(fond_controles, (LARGEUR_ECRAN, HAUTEUR_ECRAN))
+        
+        # Convertir l'image en format compatible avec OpenCV
+        fond_controles_array = pygame.surfarray.array3d(fond_controles)
+        fond_controles_array = cv2.cvtColor(fond_controles_array, cv2.COLOR_RGB2BGR)
+        
+        # Appliquer un flou léger
+        fond_controles_array = cv2.GaussianBlur(fond_controles_array, (15, 15), 0)
+        
+        # Convertir l'image floue en format compatible avec Pygame
+        fond_controles_array = cv2.cvtColor(fond_controles_array, cv2.COLOR_BGR2RGB)
+        fond_controles = pygame.surfarray.make_surface(fond_controles_array)
+        
         FENETRE.blit(fond_controles, (0, 0))      
 
         y_offset_left = 320
@@ -181,13 +203,11 @@ def afficher_controles():
         for i, (texte, image) in enumerate(controles):
             if i < 4:
                 FENETRE.blit(image, (x_offset_left - 70, y_offset_left - 32))  # Ajustement pour centrer l'image
-                texte_surface = font.render(texte, True, (255, 255, 255))
-                FENETRE.blit(texte_surface, (x_offset_left, y_offset_left))
+                draw_text_with_outline(FENETRE, texte, font, (255, 255, 255), (0, 0, 0), (x_offset_left, y_offset_left))
                 y_offset_left += 150  # 50 pixels pour la hauteur du texte + 40 pixels pour le gap
             else:
                 FENETRE.blit(image, (x_offset_right - 70, y_offset_right - 32))  # Ajustement pour centrer l'image
-                texte_surface = font.render(texte, True, (255, 255, 255))
-                FENETRE.blit(texte_surface, (x_offset_right, y_offset_right))
+                draw_text_with_outline(FENETRE, texte, font, (255, 255, 255), (0, 0, 0), (x_offset_right, y_offset_right))
                 y_offset_right += 150  # 50 pixels pour la hauteur du texte + 40 pixels pour le gap
         
         bouton_retour.dessiner(FENETRE)
