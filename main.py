@@ -72,7 +72,7 @@ def jouer_cinematique(niveau):
     clock = pygame.time.Clock()
     son_active = True
     font = pygame.font.Font(None, 36)
-    espace_appuye = False
+    echap_appuye = False
     temps_appui = 0
     
     while cap.isOpened():
@@ -89,8 +89,8 @@ def jouer_cinematique(niveau):
         text_rect = text_surface.get_rect(center=(LARGEUR_ECRAN // 2, HAUTEUR_ECRAN - 50))
         FENETRE.blit(text_surface, text_rect)
         
-        # Afficher le cercle de progression
-        if espace_appuye:
+        # Afficher le cercle de progression pour passer la cinématique
+        if echap_appuye:
             temps_appui += clock.get_time()
             pygame.draw.circle(FENETRE, (255, 255, 255), (50, HAUTEUR_ECRAN - 50), 20, 2)
             pygame.draw.arc(FENETRE, (255, 255, 255), (30, HAUTEUR_ECRAN - 70, 40, 40), 0, (temps_appui / 2000) * 2 * 3.14159, 4)
@@ -112,9 +112,10 @@ def jouer_cinematique(niveau):
                 else:
                     pygame.mixer.music.set_volume(1)
                 son_active = not son_active
-                espace_appuye = True
-            if event.type == pygame.KEYUP and event.key == pygame.K_SPACE:
-                espace_appuye = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                echap_appuye = True
+            if event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE:
+                echap_appuye = False
         
         clock.tick(fps)
     
