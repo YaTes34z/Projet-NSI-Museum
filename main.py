@@ -70,6 +70,10 @@ def jouer_cinematique(niveau):
     
     fps = cap.get(cv2.CAP_PROP_FPS)
     clock = pygame.time.Clock()
+    son_active = True
+    font = pygame.font.Font(None, 36)
+    echap_appuye = False
+    temps_appui = 0
     
     while cap.isOpened():
         ret, frame = cap.read()
@@ -79,12 +83,40 @@ def jouer_cinematique(niveau):
         frame = cv2.resize(frame, (LARGEUR_ECRAN, HAUTEUR_ECRAN))  # Redimensionner la frame
         frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
         FENETRE.blit(frame, (0, 0))
+        
+        # Afficher le texte
+        text_surface = font.render("Appuyer sur Espace pour activer/désactiver le son.", True, (255, 255, 255))
+        text_rect = text_surface.get_rect(center=(LARGEUR_ECRAN // 2, HAUTEUR_ECRAN - 50))
+        FENETRE.blit(text_surface, text_rect)
+        
+        # Afficher le cercle de progression pour passer la cinématique
+        if echap_appuye:
+            temps_appui += clock.get_time()
+            pygame.draw.circle(FENETRE, (255, 255, 255), (50, HAUTEUR_ECRAN - 50), 20, 2)
+            pygame.draw.arc(FENETRE, (255, 255, 255), (30, HAUTEUR_ECRAN - 70, 40, 40), 0, (temps_appui / 2000) * 2 * 3.14159, 4)
+            if temps_appui >= 2000:
+                break
+        else:
+            temps_appui = 0
+        
         pygame.display.flip()
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 cap.release()
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                if son_active:
+                    pygame.mixer.music.set_volume(0)
+                else:
+                    pygame.mixer.music.set_volume(1)
+                son_active = not son_active
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                echap_appuye = True
+            if event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE:
+                echap_appuye = False
+        
         clock.tick(fps)
     
     cap.release()
