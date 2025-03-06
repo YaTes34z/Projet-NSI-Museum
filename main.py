@@ -195,20 +195,20 @@ def afficher_controles():
         
         FENETRE.blit(fond_controles, (0, 0))      
 
-        y_offset_left = 320
-        y_offset_right = 320
-        x_offset_left = LARGEUR_ECRAN // 2 - 300  # Ajustement pour centrer davantage
-        x_offset_right = LARGEUR_ECRAN // 2 + 250  # Ajustement pour centrer davantage
+        y_offset_left = int(HAUTEUR_ECRAN * 0.3)
+        y_offset_right = int(HAUTEUR_ECRAN * 0.3)
+        x_offset_left = int(LARGEUR_ECRAN * 0.25)
+        x_offset_right = int(LARGEUR_ECRAN * 0.75)
         
         for i, (texte, image) in enumerate(controles):
             if i < 4:
                 FENETRE.blit(image, (x_offset_left - 70, y_offset_left - 32))  # Ajustement pour centrer l'image
                 draw_text_with_outline(FENETRE, texte, font, (255, 255, 255), (0, 0, 0), (x_offset_left, y_offset_left))
-                y_offset_left += 150  # 50 pixels pour la hauteur du texte + 40 pixels pour le gap
+                y_offset_left += int(HAUTEUR_ECRAN * 0.15)
             else:
                 FENETRE.blit(image, (x_offset_right - 70, y_offset_right - 32))  # Ajustement pour centrer l'image
                 draw_text_with_outline(FENETRE, texte, font, (255, 255, 255), (0, 0, 0), (x_offset_right, y_offset_right))
-                y_offset_right += 150  # 50 pixels pour la hauteur du texte + 40 pixels pour le gap
+                y_offset_right += int(HAUTEUR_ECRAN * 0.15)
         
         bouton_retour.dessiner(FENETRE)
         pygame.display.flip()

@@ -1,7 +1,7 @@
 import pygame
 
 # Paramètres du carré (personnage)
-square_size = 64
+square_size = 128
 
 # Couleurs
 blanc = (255, 255, 255)

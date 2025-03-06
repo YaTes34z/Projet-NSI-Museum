@@ -1,6 +1,7 @@
 import pygame
 import math
 import random
+import sys
 import main as accueil
 
 from setting import *
@@ -11,17 +12,16 @@ running = True
 paused = False
 
 info = pygame.display.Info()
-
-# Paramètres de la fenêtre
-largeur = info.current_w # Largeur de la fenêtre adaptée à l'écran de l'utilisateur
-hauteur = info.current_h # Hauteur de la fenêtre adaptée à l'écran de l'utilisateur
+LARGEUR_ECRAN, HAUTEUR_ECRAN = info.current_w, info.current_h
 
 # Taille de la carte (map)
-largeur_map = largeur * 2
-hauteur_map = hauteur * 2
+largeur_map = LARGEUR_ECRAN * 2
+hauteur_map = HAUTEUR_ECRAN * 2
 
 x = largeur_map // 2 - square_size // 2  # Position initiale du carré (au centre de la carte)
 y = hauteur_map // 2 - square_size // 2
+
+logo = pygame.image.load("images/logo.png").convert_alpha()
 
 # Charge les images du personnages pour son animation
 marche_droit = [pygame.image.load(f'images/homme_droit_{i}.png') for i in range(1, 3)]
@@ -36,7 +36,7 @@ marche_haut = [pygame.transform.scale(img, (square_size, square_size)) for img i
 marche_bas = [pygame.transform.scale(img, (square_size, square_size)) for img in marche_bas]
 
 # Fenêtre en plein écran
-WIN = pygame.display.set_mode((largeur, hauteur), pygame.FULLSCREEN)
+FENETRE = pygame.display.set_mode((LARGEUR_ECRAN, HAUTEUR_ECRAN), pygame.FULLSCREEN)
 
 # Charger l'image de fond
 fond = pygame.image.load('images/test_map.jpg')
@@ -50,51 +50,79 @@ frame_delay = 5  # Nombre de frames avant de changer d'image
 frame_count = 0
 current_direction = "bas"
 
-# Fonction pour avoir la bonne image de l'animation
-def get_current_image():
-    if current_direction == "droit":
-        return marche_droit[current_frame]
-    elif current_direction == "gauche":
-        return marche_gauche[current_frame]
-    elif current_direction == "haut":
-        return marche_haut[current_frame]
-    elif current_direction == "bas":
-        return marche_bas[current_frame]
-    return marche_bas[0]
+# Classe Bouton
+class Bouton:
+    def __init__(self, texte, position, action, image=None):
+        self.texte = texte
+        self.position = position
+        self.action = action
+        self.image = image
+        if self.image:
+            self.rect = self.image.get_rect(topleft=position)
+        else:
+            self.rect = pygame.Rect(position[0], position[1], 180, 50)
+        self.couleur = (30, 30, 30)
+        self.couleur_hover = (60, 60, 60)
+
+    def dessiner(self, surface):
+        couleur = self.couleur_hover if self.rect.collidepoint(pygame.mouse.get_pos()) else self.couleur
+        if self.image:
+            surface.blit(self.image, self.rect.topleft)
+        else:
+            pygame.draw.rect(surface, couleur, self.rect, border_radius=5)
+            font = pygame.font.Font(None, 36)
+            texte_surface = font.render(self.texte, True, (255, 255, 255))
+            texte_rect = texte_surface.get_rect(center=self.rect.center)
+            surface.blit(texte_surface, texte_rect)
+
+    def clic(self, pos):
+        return self.rect.collidepoint(pos)
+
+# Fonction pour afficher le menu de pause
+def afficher_menu_pause():
+    """Affiche le menu de pause."""
+    clock = pygame.time.Clock()
+    
+    # Charger les images des boutons
+    image_controles = pygame.image.load('images/bouton_controles.png').convert_alpha()
+    image_quitter = pygame.image.load('images/bouton_quitter.png').convert_alpha()
+    
+    # Redimensionner les images des boutons pour qu'elles aient la taille souhaitée
+    largeur_bouton = 200  # Largeur souhaitée pour les boutons
+    hauteur_bouton = 110   # Hauteur souhaitée pour les boutons
+    image_controles = pygame.transform.scale(image_controles, (largeur_bouton, hauteur_bouton))
+    image_quitter = pygame.transform.scale(image_quitter, (largeur_bouton, hauteur_bouton))
+    
+    boutons = [
+        Bouton("Contrôles", (LARGEUR_ECRAN // 2 - largeur_bouton // 2, HAUTEUR_ECRAN // 2 - 60), afficher_controles, image=image_controles),
+        Bouton("Quitter", (LARGEUR_ECRAN // 2 - largeur_bouton // 2, HAUTEUR_ECRAN // 2 + 60), lambda: pygame.quit() or sys.exit(), image=image_quitter)
+    ]
+    
+    while True:
+        FENETRE.blit(fond, (0, 0))
+        for bouton in boutons:
+            bouton.dessiner(FENETRE)
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for bouton in boutons:
+                    if bouton.clic(event.pos):
+                        bouton.action()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                return  # Retourner au jeu
+        
+        clock.tick(30)
 
 # Fonction pour afficher le menu de pause
 def pause_menu():
     global paused
     paused = True
-    font = pygame.font.Font(None, 74)
-    button_rect = pygame.Rect(WIN.get_width() // 2 - 150, WIN.get_height() // 2, 300, 80)
-
-    while paused:
-        WIN.fill((0, 0, 0))  # Remplir la fenêtre en noir pour afficher le menu
-        text = font.render("Pause", True, (255, 255, 255))
-        text_rect = text.get_rect(center=(WIN.get_width() // 2, WIN.get_height() // 2 - 100))
-        WIN.blit(text, text_rect)
-
-        pygame.draw.rect(WIN, (200, 0, 0), button_rect)
-        quit_text = font.render("Quitter", True, (255, 255, 255))
-        quit_text_rect = quit_text.get_rect(center=button_rect.center)
-        WIN.blit(quit_text, quit_text_rect)
-
-        text = font.render("Appuyez sur 'Echap' pour revenir au jeu", True, (255, 255, 255))
-        text_rect = text.get_rect(center=(largeur // 2, hauteur - 50))
-        WIN.blit(text, text_rect)
-
-        pygame.display.flip()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                paused = False
-            if event.type == pygame.MOUSEBUTTONDOWN and button_rect.collidepoint(event.pos):
-                accueil.main()
-                exit()
+    afficher_menu_pause()
+    paused = False
 
 # Fonction pour afficher la carte de la map
 def pause_map():
@@ -104,32 +132,32 @@ def pause_map():
 
     while paused:
         # Afficher la carte complète redimensionnée pour tenir dans l'écran
-        mini_map = pygame.transform.scale(fond, (largeur, hauteur))
-        WIN.blit(mini_map, (0, 0))
+        mini_map = pygame.transform.scale(fond, (LARGEUR_ECRAN, HAUTEUR_ECRAN))
+        FENETRE.blit(mini_map, (0, 0))
 
         # Calculer la position du joueur sur la mini-map
-        player_map_x = int(x / largeur_map * largeur)
-        player_map_y = int(y / hauteur_map * hauteur)
+        player_map_x = int(x / largeur_map * LARGEUR_ECRAN)
+        player_map_y = int(y / hauteur_map * HAUTEUR_ECRAN)
 
         # Dessiner un rond de couleur derrière l'image du personnage
-        pygame.draw.circle(WIN, (0, 255, 0), (player_map_x, player_map_y), square_size // 4 + 3)
+        pygame.draw.circle(FENETRE, (0, 255, 0), (player_map_x, player_map_y), square_size // 4 + 3)
         # Dessiner l'image du personnage
         player_image = pygame.transform.scale(marche_bas[0], (square_size//2, square_size//2))
-        WIN.blit(player_image, (player_map_x - player_image.get_width() // 2, player_map_y - player_image.get_height() // 2))
+        FENETRE.blit(player_image, (player_map_x - player_image.get_width() // 2, player_map_y - player_image.get_height() // 2))
 
         # Dessiner les ennemis sur la mini-carte
         for ennemi in ennemis:
-            ennemi_map_x = int(ennemi.x / largeur_map * largeur)
-            ennemi_map_y = int(ennemi.y / hauteur_map * hauteur)
+            ennemi_map_x = int(ennemi.x / largeur_map * LARGEUR_ECRAN)
+            ennemi_map_y = int(ennemi.y / hauteur_map * HAUTEUR_ECRAN)
             # Dessiner un rond de couleur derrière l'image de l'ennemi
-            pygame.draw.circle(WIN, (255, 0, 0), (ennemi_map_x, ennemi_map_y), ennemi.size // 4 + 3)
+            pygame.draw.circle(FENETRE, (255, 0, 0), (ennemi_map_x, ennemi_map_y), ennemi.size // 4 + 3)
             ennemi_image = pygame.transform.scale(ennemi.image, (ennemi.size//2, ennemi.size//2))
-            WIN.blit(ennemi_image, (ennemi_map_x - ennemi_image.get_width() // 2, ennemi_map_y - ennemi_image.get_height() // 2))
+            FENETRE.blit(ennemi_image, (ennemi_map_x - ennemi_image.get_width() // 2, ennemi_map_y - ennemi_image.get_height() // 2))
 
         # Ajouter du texte pour quitter la carte
         text = font.render("Appuyez sur 'E' pour revenir au jeu", True, (255, 255, 255))
-        text_rect = text.get_rect(center=(largeur // 2, hauteur - 50))
-        WIN.blit(text, text_rect)
+        text_rect = text.get_rect(center=(LARGEUR_ECRAN // 2, HAUTEUR_ECRAN - 50))
+        FENETRE.blit(text, text_rect)
 
         pygame.display.flip()
 
@@ -150,21 +178,21 @@ def draw_battery():
     """Affiche la barre de batterie en bas et au centre de l'écran."""
     bar_width = 300
     bar_height = 20
-    bar_x = (largeur - bar_width) // 2
-    bar_y = hauteur - 40  # Position en bas de l'écran
+    bar_x = (LARGEUR_ECRAN - bar_width) // 2
+    bar_y = HAUTEUR_ECRAN - 40  # Position en bas de l'écran
     fill_width = int((battery / 100) * bar_width)
-    pygame.draw.rect(WIN, noir, (bar_x, bar_y, bar_width, bar_height))
-    pygame.draw.rect(WIN, vert if battery > 30 else rouge, (bar_x, bar_y, fill_width, bar_height))
+    pygame.draw.rect(FENETRE, noir, (bar_x, bar_y, bar_width, bar_height))
+    pygame.draw.rect(FENETRE, vert if battery > 30 else rouge, (bar_x, bar_y, fill_width, bar_height))
 
 def draw_health_bar():
     """Affiche la barre de vie en haut et au centre de l'écran."""
     bar_width = 300
     bar_height = 20
-    bar_x = (largeur - bar_width) // 2
+    bar_x = (LARGEUR_ECRAN - bar_width) // 2
     bar_y = 20  # Position en haut de l'écran
     fill_width = int((player_health / 100) * bar_width)
-    pygame.draw.rect(WIN, noir, (bar_x, bar_y, bar_width, bar_height))
-    pygame.draw.rect(WIN, vert if player_health > 30 else rouge, (bar_x, bar_y, fill_width, bar_height))
+    pygame.draw.rect(FENETRE, noir, (bar_x, bar_y, bar_width, bar_height))
+    pygame.draw.rect(FENETRE, vert if player_health > 30 else rouge, (bar_x, bar_y, fill_width, bar_height))
 
 # Fonction pour créer et afficher le cône de lumière de la lampe-torche   
 def cone_lumiere():
@@ -180,7 +208,7 @@ def cone_lumiere():
     angle = math.atan2(dy, dx)
 
     # Créer un masque semi-transparent
-    mask = pygame.Surface((largeur, hauteur), pygame.SRCALPHA)
+    mask = pygame.Surface((LARGEUR_ECRAN, HAUTEUR_ECRAN), pygame.SRCALPHA)
     mask.fill((0, 0, 0, 245))  # Ombre globale sur toute la scène
 
     cone_points = []
@@ -210,11 +238,11 @@ def cone_lumiere():
                     cone_points = points
 
     # Assurer que le personnage soit toujours éclairé (cercle lumineux autour du personnage)
-    player_light_radius = 35  # Rayon de la lumière autour du personnage
+    player_light_radius = 65  # Rayon de la lumière autour du personnage
     pygame.draw.circle(mask, (0, 0, 0, 0), (player_screen_x, player_screen_y), player_light_radius)
 
     # Appliquer le masque à l'écran
-    WIN.blit(mask, (0, 0))
+    FENETRE.blit(mask, (0, 0))
 
     return cone_points
 
@@ -311,8 +339,8 @@ def spawn_ennemi():
 def draw_enemy_counter():
     font = pygame.font.Font(None, 40)
     text = font.render(f"Ennemis tués: {ennemis_tues}", True, (255, 255, 255))
-    text_rect = text.get_rect(center=(largeur // 2, 50))
-    WIN.blit(text, text_rect)
+    text_rect = text.get_rect(center=(LARGEUR_ECRAN // 2, 50))
+    FENETRE.blit(text, text_rect)
 
 # Dictionnaire pour stocker le temps de début de nettoyage pour chaque moisissure
 nettoyage_temps_debut = {}
@@ -398,7 +426,7 @@ def draw_dialogue():
         dialogue_surface = font.render(displayed_text, True, (0, 0, 0))
         instruction_surface = instruction_font.render(instruction_text, True, (0, 0, 0))
         
-        dialogue_rect = dialogue_surface.get_rect(topleft=(20, hauteur - 100))
+        dialogue_rect = dialogue_surface.get_rect(topleft=(20, HAUTEUR_ECRAN - 100))
         instruction_rect = instruction_surface.get_rect(topleft=(20, dialogue_rect.bottom + 5))
         
         # Calculer la taille totale du cadre
@@ -406,18 +434,57 @@ def draw_dialogue():
         total_height = dialogue_rect.height + instruction_rect.height + 30
         
         # Positionner le cadre avec un espace par rapport au bord de l'écran
-        frame_rect = pygame.Rect(20, hauteur - total_height - 20, total_width, total_height)
+        frame_rect = pygame.Rect(20, HAUTEUR_ECRAN - total_height - 20, total_width, total_height)
         
         # Dessiner le cadre blanc avec un contour noir et des bords arrondis
         corner_radius = 20
         border_width = 4
-        draw_rounded_rect(WIN, frame_rect, (255, 255, 255), corner_radius, border_width, (0, 0, 0))
+        draw_rounded_rect(FENETRE, frame_rect, (255, 255, 255), corner_radius, border_width, (0, 0, 0))
         
         # Dessiner le texte dans le cadre
-        WIN.blit(dialogue_surface, (frame_rect.x + 10, frame_rect.y + 10))
-        WIN.blit(instruction_surface, (frame_rect.x + 10, frame_rect.y + dialogue_rect.height + 15))
+        FENETRE.blit(dialogue_surface, (frame_rect.x + 10, frame_rect.y + 10))
+        FENETRE.blit(instruction_surface, (frame_rect.x + 10, frame_rect.y + dialogue_rect.height + 15))
 
 VISIBILITY_DISTANCE = 100  # Distance à laquelle les ennemis deviennent visibles
+
+def afficher_menu_pause():
+    """Affiche le menu de pause."""
+    clock = pygame.time.Clock()
+    
+    # Charger les images des boutons
+    image_controles = pygame.image.load('images/bouton_controles.png').convert_alpha()
+    image_quitter = pygame.image.load('images/bouton_quitter.png').convert_alpha()
+    
+    # Redimensionner les images des boutons pour qu'elles aient la taille souhaitée
+    largeur_bouton = 200  # Largeur souhaitée pour les boutons
+    hauteur_bouton = 110   # Hauteur souhaitée pour les boutons
+    image_controles = pygame.transform.scale(image_controles, (largeur_bouton, hauteur_bouton))
+    image_quitter = pygame.transform.scale(image_quitter, (largeur_bouton, hauteur_bouton))
+    
+    boutons = [
+        Bouton("Contrôles", (LARGEUR_ECRAN // 2 - largeur_bouton // 2, HAUTEUR_ECRAN // 2 - 60), afficher_controles, image=image_controles),
+        Bouton("Quitter", (LARGEUR_ECRAN // 2 - largeur_bouton // 2, HAUTEUR_ECRAN // 2 + 60), lambda: pygame.quit() or sys.exit(), image=image_quitter)
+    ]
+    
+    while True:
+        FENETRE.blit(fond, (0, 0))
+        FENETRE.blit(logo, (LARGEUR_ECRAN // 2 - logo.get_width() // 2, 50))
+        for bouton in boutons:
+            bouton.dessiner(FENETRE)
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for bouton in boutons:
+                    if bouton.clic(event.pos):
+                        bouton.action()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                return  # Retourner au jeu
+        
+        clock.tick(30)
 
 def main():
     global fond, x, y, running, camera_x, camera_y, frame_count, current_frame, current_direction, battery, cone_active, ennemis_tues, spawn_timer, spawn_interval, current_dialogue_index, show_dialogue, dialogue_speed, last_update_time, current_letter_index, show_ellipsis, ellipsis_timer, ellipsis_interval, dialogues_termines
@@ -489,36 +556,36 @@ def main():
         y = max(0, min(hauteur_map - square_size, y))
 
         # Mettre à jour la caméra pour suivre le personnage (le centrer dans la fenêtre)
-        camera_x = x - largeur // 2 + square_size // 2
-        camera_y = y - hauteur // 2 + square_size // 2
+        camera_x = x - LARGEUR_ECRAN // 2 + square_size // 2
+        camera_y = y - HAUTEUR_ECRAN // 2 + square_size // 2
 
         # Empêcher la caméra de sortir de la carte
-        camera_x = max(0, min(largeur_map - largeur, camera_x))
-        camera_y = max(0, min(hauteur_map - hauteur, camera_y))
+        camera_x = max(0, min(largeur_map - LARGEUR_ECRAN, camera_x))
+        camera_y = max(0, min(hauteur_map - HAUTEUR_ECRAN, camera_y))
 
         # Effacer l'écran (fenêtre) à chaque frame
-        WIN.fill(blanc)
+        FENETRE.fill(blanc)
         # Afficher l'image de fond décalée par rapport à la caméra
-        WIN.blit(fond, (-camera_x, -camera_y))
+        FENETRE.blit(fond, (-camera_x, -camera_y))
 
         # Dessiner la moisissure sur la fenêtre
         for moisissure in moisissures:
-            WIN.blit(moisissure_image, (moisissure[0] - camera_x, moisissure[1] - camera_y))
+            FENETRE.blit(moisissure_image, (moisissure[0] - camera_x, moisissure[1] - camera_y))
 
         # Dessiner le carré sur la fenêtre avec son décalage dû à la caméra
-        WIN.blit(get_current_image(), (x - camera_x, y - camera_y))
+        FENETRE.blit(get_current_image(), (x - camera_x, y - camera_y))
 
         if cone_active or battery == 0:
             cone_points = cone_lumiere()
         else:
             # Assombrir les ennemis lorsque la batterie est épuisée
-            mask = pygame.Surface((largeur, hauteur), pygame.SRCALPHA)
+            mask = pygame.Surface((LARGEUR_ECRAN, HAUTEUR_ECRAN), pygame.SRCALPHA)
             mask.fill((0, 0, 0, 245))
             player_screen_x = x - camera_x + square_size // 2
             player_screen_y = y - camera_y + square_size // 2
             player_light_radius = 35  # Rayon de la lumière autour du personnage
             pygame.draw.circle(mask, (0, 0, 0, 150), (player_screen_x, player_screen_y), player_light_radius)
-            WIN.blit(mask, (0, 0))
+            FENETRE.blit(mask, (0, 0))
             cone_points = []
 
         draw_battery()
@@ -538,7 +605,7 @@ def main():
             distance_to_player = math.sqrt((ennemi_screen_x - player_screen_x) ** 2 + (ennemi_screen_y - player_screen_y) ** 2)
             if is_point_in_cone(ennemi_screen_x, ennemi_screen_y, cone_points) or distance_to_player < VISIBILITY_DISTANCE:
                 ennemi.time_in_light += dt
-                WIN.blit(ennemi.image, (ennemi.x - camera_x, ennemi.y - camera_y))  # Dessiner l'ennemi s'il est dans le cône de lumière ou proche du joueur
+                FENETRE.blit(ennemi.image, (ennemi.x - camera_x, ennemi.y - camera_y))  # Dessiner l'ennemi s'il est dans le cône de lumière ou proche du joueur
             else:
                 ennemi.time_in_light = 0
 
