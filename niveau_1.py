@@ -3,8 +3,8 @@ import math
 import random
 import sys
 import main as accueil
-
 from setting import *
+import cv2
 
 # Initialisation de Pygame
 pygame.init()
@@ -21,6 +21,9 @@ hauteur_map = HAUTEUR_ECRAN * 2
 x = largeur_map // 2 - square_size // 2  # Position initiale du carré (au centre de la carte)
 y = hauteur_map // 2 - square_size // 2
 
+# Fenêtre en plein écran
+FENETRE = pygame.display.set_mode((LARGEUR_ECRAN, HAUTEUR_ECRAN), pygame.FULLSCREEN)
+
 logo = pygame.image.load("images/logo.png").convert_alpha()
 
 # Charge les images du personnages pour son animation
@@ -34,9 +37,6 @@ marche_droit = [pygame.transform.scale(img, (square_size, square_size)) for img 
 marche_gauche = [pygame.transform.scale(img, (square_size, square_size)) for img in marche_gauche]
 marche_haut = [pygame.transform.scale(img, (square_size, square_size)) for img in marche_haut]
 marche_bas = [pygame.transform.scale(img, (square_size, square_size)) for img in marche_bas]
-
-# Fenêtre en plein écran
-FENETRE = pygame.display.set_mode((LARGEUR_ECRAN, HAUTEUR_ECRAN), pygame.FULLSCREEN)
 
 # Charger l'image de fond
 fond = pygame.image.load('images/test_map.jpg')
@@ -94,7 +94,7 @@ def afficher_menu_pause():
     image_quitter = pygame.transform.scale(image_quitter, (largeur_bouton, hauteur_bouton))
     
     boutons = [
-        Bouton("Contrôles", (LARGEUR_ECRAN // 2 - largeur_bouton // 2, HAUTEUR_ECRAN // 2 - 60), afficher_controles, image=image_controles),
+        Bouton("Contrôles", (LARGEUR_ECRAN // 2 - largeur_bouton // 2, HAUTEUR_ECRAN // 2 - 60), afficher_controles(), image=image_controles),
         Bouton("Quitter", (LARGEUR_ECRAN // 2 - largeur_bouton // 2, HAUTEUR_ECRAN // 2 + 60), lambda: pygame.quit() or sys.exit(), image=image_quitter)
     ]
     
@@ -116,6 +116,17 @@ def afficher_menu_pause():
                 return  # Retourner au jeu
         
         clock.tick(30)
+# Fonction pour avoir la bonne image de l'animation
+def get_current_image():
+    if current_direction == "droit":
+        return marche_droit[current_frame]
+    elif current_direction == "gauche":
+        return marche_gauche[current_frame]
+    elif current_direction == "haut":
+        return marche_haut[current_frame]
+    elif current_direction == "bas":
+        return marche_bas[current_frame]
+    return marche_bas[0]
 
 # Fonction pour afficher le menu de pause
 def pause_menu():
@@ -463,7 +474,7 @@ def afficher_menu_pause():
     
     boutons = [
         Bouton("Contrôles", (LARGEUR_ECRAN // 2 - largeur_bouton // 2, HAUTEUR_ECRAN // 2 - 60), afficher_controles, image=image_controles),
-        Bouton("Quitter", (LARGEUR_ECRAN // 2 - largeur_bouton // 2, HAUTEUR_ECRAN // 2 + 60), lambda: pygame.quit() or sys.exit(), image=image_quitter)
+        Bouton("Quitter", (LARGEUR_ECRAN // 2 - largeur_bouton // 2, HAUTEUR_ECRAN // 2 + 60), accueil.afficher_menu_principal, image=image_quitter)
     ]
     
     while True:
@@ -485,6 +496,89 @@ def afficher_menu_pause():
                 return  # Retourner au jeu
         
         clock.tick(30)
+
+# Charger et redimensionner les images des touches
+touche_Z = pygame.transform.scale(pygame.image.load('images/touche_Z.png').convert_alpha(), (64, 64))
+touche_S = pygame.transform.scale(pygame.image.load('images/touche_S.png').convert_alpha(), (64, 64))
+touche_D = pygame.transform.scale(pygame.image.load('images/touche_D.png').convert_alpha(), (64, 64))
+touche_Q = pygame.transform.scale(pygame.image.load('images/touche_Q.png').convert_alpha(), (64, 64))
+touche_Echap = pygame.transform.scale(pygame.image.load('images/touche_Echap.png').convert_alpha(), (64, 64))
+touche_E = pygame.transform.scale(pygame.image.load('images/touche_E.png').convert_alpha(), (64, 64))
+touche_CliqueDroit = pygame.transform.scale(pygame.image.load('images/touche_CliqueDroit.png').convert_alpha(), (64, 64))
+touche_CliqueGauche = pygame.transform.scale(pygame.image.load('images/touche_CliqueGauche.png').convert_alpha(), (64, 64))
+
+def draw_text_with_outline(surface, text, font, color, outline_color, pos, outline_width=2):
+    text_surface = font.render(text, True, color)
+    outline_surface = font.render(text, True, outline_color)
+    x, y = pos
+    for dx in range(-outline_width, outline_width + 1):
+        for dy in range(-outline_width, outline_width + 1):
+            if dx != 0 or dy != 0:
+                surface.blit(outline_surface, (x + dx, y + dy))
+    surface.blit(text_surface, pos)
+
+def afficher_controles():
+    """Affiche une fenêtre avec les contrôles du jeu."""
+    controles_actif = True
+    font = pygame.font.Font(None, 36)
+    controles = [
+        ("Aller en haut", touche_Z),
+        ("Aller en bas", touche_S),
+        ("Aller à droite", touche_D),
+        ("Aller à gauche", touche_Q),
+        ("Accéder au menu", touche_Echap),
+        ("Accéder à la carte", touche_E),
+        ("Allumer la lampe torche", touche_CliqueDroit),
+        ("Nettoyer la moisissure", touche_CliqueGauche)
+    ]
+    
+    bouton_retour = Bouton("Retour", (LARGEUR_ECRAN // 2 - 90, HAUTEUR_ECRAN - 100), afficher_menu_pause)
+    
+    while controles_actif:
+        fond_controles = pygame.image.load("images/fond.jpg").convert()
+        fond_controles = pygame.transform.scale(fond_controles, (LARGEUR_ECRAN, HAUTEUR_ECRAN))
+        
+        # Convertir l'image en format compatible avec OpenCV
+        fond_controles_array = pygame.surfarray.array3d(fond_controles)
+        fond_controles_array = cv2.cvtColor(fond_controles_array, cv2.COLOR_RGB2BGR)
+        
+        # Appliquer un flou léger
+        fond_controles_array = cv2.GaussianBlur(fond_controles_array, (15, 15), 0)
+        
+        # Convertir l'image floue en format compatible avec Pygame
+        fond_controles_array = cv2.cvtColor(fond_controles_array, cv2.COLOR_BGR2RGB)
+        fond_controles = pygame.surfarray.make_surface(fond_controles_array)
+        
+        FENETRE.blit(fond_controles, (0, 0))      
+
+        y_offset_left = int(HAUTEUR_ECRAN * 0.3)
+        y_offset_right = int(HAUTEUR_ECRAN * 0.3)
+        x_offset_left = int(LARGEUR_ECRAN * 0.25)
+        x_offset_right = int(LARGEUR_ECRAN * 0.75)
+        
+        for i, (texte, image) in enumerate(controles):
+            if i < 4:
+                FENETRE.blit(image, (x_offset_left - 70, y_offset_left - 32))  # Ajustement pour centrer l'image
+                draw_text_with_outline(FENETRE, texte, font, (255, 255, 255), (0, 0, 0), (x_offset_left, y_offset_left))
+                y_offset_left += int(HAUTEUR_ECRAN * 0.15)
+            else:
+                FENETRE.blit(image, (x_offset_right - 70, y_offset_right - 32))  # Ajustement pour centrer l'image
+                draw_text_with_outline(FENETRE, texte, font, (255, 255, 255), (0, 0, 0), (x_offset_right, y_offset_right))
+                y_offset_right += int(HAUTEUR_ECRAN * 0.15)
+        
+        bouton_retour.dessiner(FENETRE)
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                controles_actif = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if bouton_retour.clic(event.pos):
+                    controles_actif = False
+                    afficher_menu_pause
 
 def main():
     global fond, x, y, running, camera_x, camera_y, frame_count, current_frame, current_direction, battery, cone_active, ennemis_tues, spawn_timer, spawn_interval, current_dialogue_index, show_dialogue, dialogue_speed, last_update_time, current_letter_index, show_ellipsis, ellipsis_timer, ellipsis_interval, dialogues_termines
